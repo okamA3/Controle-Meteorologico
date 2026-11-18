@@ -645,10 +645,14 @@
       btnSubmit.disabled = true;
       btnSubmit.textContent = 'Enviando...';
 
+      // Converte ponto para vírgula para compatibilidade com Google Sheets PT-BR
+      const latFormatted = lat.toFixed(6).replace('.', ',');
+      const lngFormatted = lng.toFixed(6).replace('.', ',');
+
       const formData = new URLSearchParams();
       formData.append('entry.690706598', localInput.value.trim());
-      formData.append('entry.1565294304', latInput.value.trim());
-      formData.append('entry.612983124', lngInput.value.trim());
+      formData.append('entry.1565294304', latFormatted);
+      formData.append('entry.612983124', lngFormatted);
 
       try {
         await fetch(FORM_ACTION_URL, {
