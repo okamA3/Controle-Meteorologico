@@ -645,9 +645,9 @@
       btnSubmit.disabled = true;
       btnSubmit.textContent = 'Enviando...';
 
-      // Converte ponto para vírgula para compatibilidade com Google Sheets PT-BR
-      const latFormatted = lat.toFixed(6).replace('.', ',');
-      const lngFormatted = lng.toFixed(6).replace('.', ',');
+      // O apóstrofo força o Google Sheets a salvar como texto literal com ponto (alinhado à esquerda, igual às primeiras linhas)
+      const latFormatted = "'" + lat.toFixed(6);
+      const lngFormatted = "'" + lng.toFixed(6);
 
       const formData = new URLSearchParams();
       formData.append('entry.690706598', localInput.value.trim());
