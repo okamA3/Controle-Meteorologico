@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de Localização com Mapa</title>
+  <title>Registro de Localização</title>
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -66,6 +66,7 @@
 
     .form-group {
       margin-bottom: 1rem;
+      position: relative;
     }
 
     label {
@@ -92,10 +93,72 @@
       border-color: var(--accent);
     }
 
-    input[readonly] {
+    /* Busca de Endereço (Nominatim) */
+    .search-box {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-search {
+      background-color: var(--border);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0 0.9rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-search:hover {
+      background-color: #475569;
+    }
+
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: var(--bg-color);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 0.35rem;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+      display: none;
+    }
+
+    .search-results.open {
+      display: block;
+    }
+
+    .search-item {
+      padding: 0.65rem 0.85rem;
+      font-size: 0.825rem;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      line-height: 1.35;
+    }
+
+    .search-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-item:hover {
+      background-color: var(--card-bg);
+      color: var(--accent);
+    }
+
+    .search-empty {
+      padding: 0.75rem;
+      font-size: 0.825rem;
       color: var(--text-secondary);
-      cursor: not-allowed;
-      background-color: rgba(15, 23, 42, 0.6);
+      text-align: center;
     }
 
     .coords-grid {
@@ -114,17 +177,21 @@
     }
 
     #map {
-      height: 220px;
+      height: 240px;
       width: 100%;
-      background-color: #0b1120;
+      background-color: #1e293b;
       z-index: 1;
     }
 
+    .dark-tiles {
+      filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+    }
+
     .map-hint {
-      background-color: rgba(15, 23, 42, 0.85);
+      background-color: rgba(15, 23, 42, 0.9);
       color: var(--text-secondary);
       font-size: 0.75rem;
-      padding: 0.35rem 0.6rem;
+      padding: 0.4rem 0.6rem;
       text-align: center;
       border-top: 1px solid var(--border);
     }
@@ -133,18 +200,26 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 0.5rem;
       background-color: rgba(15, 23, 42, 0.5);
       border: 1px solid var(--border);
       padding: 0.65rem 0.75rem;
       border-radius: 8px;
       margin-bottom: 1.25rem;
-      font-size: 0.825rem;
+      font-size: 0.8rem;
     }
 
     .status-indicator {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      overflow: hidden;
+    }
+
+    #gpsText {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .dot {
@@ -156,13 +231,14 @@
     }
 
     .dot.active { background-color: var(--success); }
+    .dot.paused { background-color: var(--accent); }
     .dot.error { background-color: var(--error); }
 
     .btn-refresh {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text-primary);
-      padding: 0.25rem 0.6rem;
+      padding: 0.3rem 0.65rem;
       border-radius: 6px;
       font-size: 0.75rem;
       cursor: pointer;
@@ -225,7 +301,7 @@
   <main class="container">
     <header>
       <h1>Check-in de Localização</h1>
-      <p class="subtitle">Confirme o pino no mapa e envie o registro.</p>
+      <p class="subtitle">Busque um endereço, ajuste no mapa ou use o GPS ao vivo.</p>
     </header>
 
     <form id="geoForm">
@@ -241,20 +317,35 @@
         >
       </div>
 
+      <!-- Barra de Busca Nominatim -->
+      <div class="form-group">
+        <label for="addressSearch">Buscar Endereço no Mapa</label>
+        <div class="search-box">
+          <input 
+            type="text" 
+            id="addressSearch" 
+            placeholder="Digite rua, bairro ou cidade..." 
+            autocomplete="off"
+          >
+          <button type="button" class="btn-search" id="btnSearch">Buscar</button>
+        </div>
+        <div id="searchResults" class="search-results"></div>
+      </div>
+
       <div class="map-wrapper">
         <div id="map"></div>
-        <div class="map-hint">Arraste o marcador caso precise ajustar o ponto exato</div>
+        <div class="map-hint">Clique no mapa, arraste o pino ou edite os números abaixo</div>
       </div>
 
       <div class="coords-grid">
         <div class="form-group">
           <label for="latitude">Latitude</label>
           <input 
-            type="text" 
+            type="number" 
+            step="any"
             id="latitude" 
             name="entry.1565294304" 
-            placeholder="Aguardando..." 
-            readonly 
+            placeholder="-23.000000" 
             required
           >
         </div>
@@ -262,11 +353,11 @@
         <div class="form-group">
           <label for="longitude">Longitude</label>
           <input 
-            type="text" 
+            type="number" 
+            step="any"
             id="longitude" 
             name="entry.612983124" 
-            placeholder="Aguardando..." 
-            readonly 
+            placeholder="-46.000000" 
             required
           >
         </div>
@@ -275,14 +366,14 @@
       <div class="gps-status">
         <div class="status-indicator">
           <span class="dot" id="gpsDot"></span>
-          <span id="gpsText">Obtendo coordenadas GPS...</span>
+          <span id="gpsText">Iniciando GPS em tempo real...</span>
         </div>
-        <button type="button" class="btn-refresh" id="btnRefresh" title="Recalibrar via GPS">
-          Recalibrar
+        <button type="button" class="btn-refresh" id="btnRefresh">
+          Seguir GPS
         </button>
       </div>
 
-      <button type="submit" class="btn-submit" id="btnSubmit" disabled>
+      <button type="submit" class="btn-submit" id="btnSubmit">
         Registrar Localização
       </button>
 
@@ -298,6 +389,9 @@
 
     const form = document.getElementById('geoForm');
     const localInput = document.getElementById('local');
+    const searchInput = document.getElementById('addressSearch');
+    const btnSearch = document.getElementById('btnSearch');
+    const searchResults = document.getElementById('searchResults');
     const latInput = document.getElementById('latitude');
     const lngInput = document.getElementById('longitude');
     const gpsDot = document.getElementById('gpsDot');
@@ -306,47 +400,51 @@
     const btnSubmit = document.getElementById('btnSubmit');
     const feedback = document.getElementById('feedback');
 
-    // Estado do Mapa
     let map = null;
     let marker = null;
     let accuracyCircle = null;
+    let watchId = null;
+    let isAutoTracking = true;
+    let searchDebounceTimer = null;
 
     function initMap() {
-      // Inicializa centrado no Brasil antes da captura do GPS
       map = L.map('map', {
         zoomControl: true,
         attributionControl: false
       }).setView([-14.235, -51.925], 4);
 
-      // Camada escura nativa (CartoDB Dark Matter)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        className: 'dark-tiles'
       }).addTo(map);
+
+      map.on('click', (e) => {
+        pauseAutoTracking('Ponto selecionado no mapa');
+        setCoordinates(e.latlng.lat, e.latlng.lng, null, false);
+      });
     }
 
-    function updateMapPosition(lat, lng, accuracy = null) {
+    function setCoordinates(lat, lng, accuracy = null, recenterMap = true, zoomLevel = null) {
       const coords = [lat, lng];
+      latInput.value = lat.toFixed(6);
+      lngInput.value = lng.toFixed(6);
 
       if (!marker) {
         marker = L.marker(coords, { draggable: true }).addTo(map);
-        
-        // Atualiza inputs se o usuário arrastar o pino manualmente
+
+        marker.on('dragstart', () => {
+          pauseAutoTracking('Ajustando manualmente...');
+        });
+
         marker.on('dragend', (event) => {
-          const position = event.target.getLatLng();
-          latInput.value = position.lat.toFixed(6);
-          lngInput.value = position.lng.toFixed(6);
-          
-          if (accuracyCircle) {
-            accuracyCircle.remove();
-            accuracyCircle = null;
-          }
-          updateGpsStatus('success', 'Posição ajustada manualmente');
+          const pos = event.target.getLatLng();
+          setCoordinates(pos.lat, pos.lng, null, false);
+          updateGpsStatus('paused', 'Posição manual (GPS pausado)');
         });
       } else {
         marker.setLatLng(coords);
       }
 
-      // Desenha/atualiza o raio de precisão do GPS
       if (accuracy !== null) {
         if (accuracyCircle) {
           accuracyCircle.setLatLng(coords).setRadius(accuracy);
@@ -359,51 +457,171 @@
             weight: 1
           }).addTo(map);
         }
+      } else if (accuracyCircle) {
+        accuracyCircle.remove();
+        accuracyCircle = null;
       }
 
-      map.setView(coords, 17, { animate: true });
+      if (recenterMap) {
+        const targetZoom = zoomLevel !== null ? zoomLevel : (map.getZoom() < 15 ? 17 : map.getZoom());
+        map.setView(coords, targetZoom, { animate: true });
+      }
     }
+
+    // Busca via Nominatim API (OpenStreetMap)
+    async function searchAddress(query) {
+      const trimmed = query.trim();
+      if (trimmed.length < 3) {
+        searchResults.classList.remove('open');
+        return;
+      }
+
+      searchResults.innerHTML = '<div class="search-empty">Buscando endereço...</div>';
+      searchResults.classList.add('open');
+
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&countrycodes=br&limit=5&accept-language=pt-BR`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+          searchResults.innerHTML = '<div class="search-empty">Nenhum endereço encontrado.</div>';
+          return;
+        }
+
+        searchResults.innerHTML = '';
+        data.forEach((place) => {
+          const item = document.createElement('div');
+          item.className = 'search-item';
+          item.textContent = place.display_name;
+          
+          item.addEventListener('click', () => {
+            const lat = parseFloat(place.lat);
+            const lng = parseFloat(place.lon);
+            
+            pauseAutoTracking('Endereço selecionado via busca');
+            setCoordinates(lat, lng, null, true, 17);
+            
+            // Preenche o nome do local se estiver vazio
+            if (!localInput.value.trim()) {
+              localInput.value = place.display_name.split(',')[0];
+            }
+            
+            searchInput.value = place.display_name;
+            searchResults.classList.remove('open');
+          });
+
+          searchResults.appendChild(item);
+        });
+      } catch (err) {
+        searchResults.innerHTML = '<div class="search-empty">Erro ao consultar o serviço de mapas.</div>';
+      }
+    }
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        searchAddress(searchInput.value);
+      }, 450);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(searchDebounceTimer);
+        searchAddress(searchInput.value);
+      }
+    });
+
+    btnSearch.addEventListener('click', () => {
+      clearTimeout(searchDebounceTimer);
+      searchAddress(searchInput.value);
+    });
+
+    // Fecha o dropdown ao clicar fora da busca
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.form-group')) {
+        searchResults.classList.remove('open');
+      }
+    });
 
     function updateGpsStatus(state, message) {
       gpsDot.className = 'dot';
-      if (state === 'success') gpsDot.classList.add('active');
+      if (state === 'active') gpsDot.classList.add('active');
+      if (state === 'paused') gpsDot.classList.add('paused');
       if (state === 'error') gpsDot.classList.add('error');
       gpsText.textContent = message;
     }
 
-    function fetchCoordinates() {
-      btnSubmit.disabled = true;
-      updateGpsStatus('loading', 'Buscando sinal GPS...');
+    function pauseAutoTracking(reason) {
+      isAutoTracking = false;
+      updateGpsStatus('paused', reason);
+      btnRefresh.textContent = 'Retomar GPS';
+    }
+
+    function startRealTimeTracking() {
+      isAutoTracking = true;
+      btnRefresh.textContent = 'Seguir GPS';
+      updateGpsStatus('loading', 'Rastreando GPS...');
 
       if (!('geolocation' in navigator)) {
-        updateGpsStatus('error', 'Geolocalização não suportada.');
+        updateGpsStatus('error', 'Navegador sem suporte a GPS.');
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+
+      watchId = navigator.geolocation.watchPosition(
         (position) => {
+          if (!isAutoTracking) return;
+
           const { latitude, longitude, accuracy } = position.coords;
-          latInput.value = latitude.toFixed(6);
-          lngInput.value = longitude.toFixed(6);
-          
-          updateMapPosition(latitude, longitude, accuracy);
-          updateGpsStatus('success', `GPS ativo (precisão: ~${Math.round(accuracy)}m)`);
-          btnSubmit.disabled = false;
+          setCoordinates(latitude, longitude, accuracy, true);
+          updateGpsStatus('active', `GPS ao vivo (~${Math.round(accuracy)}m)`);
         },
         (error) => {
-          let msg = 'Erro ao obter localização.';
-          if (error.code === error.PERMISSION_DENIED) msg = 'Permissão de GPS negada.';
-          if (error.code === error.POSITION_UNAVAILABLE) msg = 'Sinal GPS indisponível.';
-          if (error.code === error.TIMEOUT) msg = 'Tempo limite esgotado.';
+          if (!isAutoTracking) return;
+          let msg = 'Erro no GPS. Busque ou edite manual.';
+          if (error.code === error.PERMISSION_DENIED) msg = 'Permissão negada. Busque ou edite.';
+          if (error.code === error.POSITION_UNAVAILABLE) msg = 'Sem sinal GPS. Busque ou edite.';
           updateGpsStatus('error', msg);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 0
         }
       );
     }
+
+    function handleManualInput() {
+      const lat = parseFloat(latInput.value);
+      const lng = parseFloat(lngInput.value);
+
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        pauseAutoTracking('Coordenadas digitadas');
+        const coords = [lat, lng];
+        if (!marker) {
+          marker = L.marker(coords, { draggable: true }).addTo(map);
+        } else {
+          marker.setLatLng(coords);
+        }
+        if (accuracyCircle) {
+          accuracyCircle.remove();
+          accuracyCircle = null;
+        }
+        map.setView(coords, map.getZoom() < 15 ? 16 : map.getZoom());
+      }
+    }
+
+    latInput.addEventListener('input', handleManualInput);
+    lngInput.addEventListener('input', handleManualInput);
+
+    btnRefresh.addEventListener('click', () => {
+      startRealTimeTracking();
+    });
 
     function showFeedback(type, message) {
       feedback.className = `toast ${type}`;
@@ -416,8 +634,11 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      if (!latInput.value || !lngInput.value) {
-        showFeedback('error', 'Aguarde a captura das coordenadas GPS.');
+      const lat = parseFloat(latInput.value);
+      const lng = parseFloat(lngInput.value);
+
+      if (isNaN(lat) || isNaN(lng)) {
+        showFeedback('error', 'Informe coordenadas válidas antes de enviar.');
         return;
       }
 
@@ -426,8 +647,8 @@
 
       const formData = new URLSearchParams();
       formData.append('entry.690706598', localInput.value.trim());
-      formData.append('entry.1565294304', latInput.value);
-      formData.append('entry.612983124', lngInput.value);
+      formData.append('entry.1565294304', latInput.value.trim());
+      formData.append('entry.612983124', lngInput.value.trim());
 
       try {
         await fetch(FORM_ACTION_URL, {
@@ -439,8 +660,9 @@
           body: formData.toString()
         });
 
-        showFeedback('success', 'Registro enviado com sucesso!');
+        showFeedback('success', 'Localização registrada com sucesso!');
         localInput.value = '';
+        searchInput.value = '';
       } catch (err) {
         showFeedback('error', 'Falha de rede ao enviar os dados.');
       } finally {
@@ -449,11 +671,9 @@
       }
     });
 
-    btnRefresh.addEventListener('click', fetchCoordinates);
-
     document.addEventListener('DOMContentLoaded', () => {
       initMap();
-      fetchCoordinates();
+      startRealTimeTracking();
     });
   </script>
 </body>
