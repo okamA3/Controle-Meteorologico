@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de Localização</title>
+  <title>Registro de Localização com Mapa</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
   <style>
     :root {
       --bg-color: #0f172a;
@@ -39,18 +43,18 @@
       background-color: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 2rem;
+      padding: 1.75rem;
       width: 100%;
-      max-width: 440px;
+      max-width: 480px;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
     }
 
     header {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
       margin-bottom: 0.25rem;
     }
@@ -61,25 +65,25 @@
     }
 
     .form-group {
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
     }
 
     label {
       display: block;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
       font-weight: 500;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
       color: var(--text-primary);
     }
 
     input {
       width: 100%;
-      padding: 0.75rem 1rem;
+      padding: 0.7rem 0.9rem;
       border-radius: 8px;
       border: 1px solid var(--border);
       background-color: var(--bg-color);
       color: var(--text-primary);
-      font-size: 1rem;
+      font-size: 0.95rem;
       transition: border-color 0.2s;
     }
 
@@ -100,16 +104,41 @@
       gap: 0.75rem;
     }
 
+    /* Container do Mapa Leaflet */
+    .map-wrapper {
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    #map {
+      height: 220px;
+      width: 100%;
+      background-color: #0b1120;
+      z-index: 1;
+    }
+
+    .map-hint {
+      background-color: rgba(15, 23, 42, 0.85);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      padding: 0.35rem 0.6rem;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
     .gps-status {
       display: flex;
       align-items: center;
       justify-content: space-between;
       background-color: rgba(15, 23, 42, 0.5);
       border: 1px solid var(--border);
-      padding: 0.75rem;
+      padding: 0.65rem 0.75rem;
       border-radius: 8px;
-      margin-bottom: 1.5rem;
-      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.825rem;
     }
 
     .status-indicator {
@@ -123,6 +152,7 @@
       height: 8px;
       border-radius: 50%;
       background-color: var(--warning);
+      flex-shrink: 0;
     }
 
     .dot.active { background-color: var(--success); }
@@ -137,6 +167,7 @@
       font-size: 0.75rem;
       cursor: pointer;
       transition: background 0.2s;
+      flex-shrink: 0;
     }
 
     .btn-refresh:hover {
@@ -145,7 +176,7 @@
 
     .btn-submit {
       width: 100%;
-      padding: 0.875rem;
+      padding: 0.85rem;
       border: none;
       border-radius: 8px;
       background-color: var(--accent);
@@ -169,7 +200,7 @@
       margin-top: 1rem;
       padding: 0.75rem;
       border-radius: 8px;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
       text-align: center;
       display: none;
     }
@@ -194,7 +225,7 @@
   <main class="container">
     <header>
       <h1>Check-in de Localização</h1>
-      <p class="subtitle">Identifique o ponto e envie as coordenadas GPS.</p>
+      <p class="subtitle">Confirme o pino no mapa e envie o registro.</p>
     </header>
 
     <form id="geoForm">
@@ -208,6 +239,11 @@
           required 
           autocomplete="off"
         >
+      </div>
+
+      <div class="map-wrapper">
+        <div id="map"></div>
+        <div class="map-hint">Arraste o marcador caso precise ajustar o ponto exato</div>
       </div>
 
       <div class="coords-grid">
@@ -241,8 +277,8 @@
           <span class="dot" id="gpsDot"></span>
           <span id="gpsText">Obtendo coordenadas GPS...</span>
         </div>
-        <button type="button" class="btn-refresh" id="btnRefresh" title="Atualizar localização">
-          Atualizar
+        <button type="button" class="btn-refresh" id="btnRefresh" title="Recalibrar via GPS">
+          Recalibrar
         </button>
       </div>
 
@@ -254,8 +290,10 @@
     </form>
   </main>
 
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <script>
-    // Endpoint convertido de /viewform para /formResponse
     const FORM_ACTION_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf_rnqKDB-wdYD3PIxkgKafM8PtugWNWbRe7ufbUTyORsnhUg/formResponse';
 
     const form = document.getElementById('geoForm');
@@ -267,6 +305,64 @@
     const btnRefresh = document.getElementById('btnRefresh');
     const btnSubmit = document.getElementById('btnSubmit');
     const feedback = document.getElementById('feedback');
+
+    // Estado do Mapa
+    let map = null;
+    let marker = null;
+    let accuracyCircle = null;
+
+    function initMap() {
+      // Inicializa centrado no Brasil antes da captura do GPS
+      map = L.map('map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([-14.235, -51.925], 4);
+
+      // Camada escura nativa (CartoDB Dark Matter)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(map);
+    }
+
+    function updateMapPosition(lat, lng, accuracy = null) {
+      const coords = [lat, lng];
+
+      if (!marker) {
+        marker = L.marker(coords, { draggable: true }).addTo(map);
+        
+        // Atualiza inputs se o usuário arrastar o pino manualmente
+        marker.on('dragend', (event) => {
+          const position = event.target.getLatLng();
+          latInput.value = position.lat.toFixed(6);
+          lngInput.value = position.lng.toFixed(6);
+          
+          if (accuracyCircle) {
+            accuracyCircle.remove();
+            accuracyCircle = null;
+          }
+          updateGpsStatus('success', 'Posição ajustada manualmente');
+        });
+      } else {
+        marker.setLatLng(coords);
+      }
+
+      // Desenha/atualiza o raio de precisão do GPS
+      if (accuracy !== null) {
+        if (accuracyCircle) {
+          accuracyCircle.setLatLng(coords).setRadius(accuracy);
+        } else {
+          accuracyCircle = L.circle(coords, {
+            radius: accuracy,
+            color: '#3b82f6',
+            fillColor: '#3b82f6',
+            fillOpacity: 0.15,
+            weight: 1
+          }).addTo(map);
+        }
+      }
+
+      map.setView(coords, 17, { animate: true });
+    }
 
     function updateGpsStatus(state, message) {
       gpsDot.className = 'dot';
@@ -289,6 +385,8 @@
           const { latitude, longitude, accuracy } = position.coords;
           latInput.value = latitude.toFixed(6);
           lngInput.value = longitude.toFixed(6);
+          
+          updateMapPosition(latitude, longitude, accuracy);
           updateGpsStatus('success', `GPS ativo (precisão: ~${Math.round(accuracy)}m)`);
           btnSubmit.disabled = false;
         },
@@ -332,7 +430,6 @@
       formData.append('entry.612983124', lngInput.value);
 
       try {
-        // mode: 'no-cors' é obrigatório para requisições client-side ao Google Forms
         await fetch(FORM_ACTION_URL, {
           method: 'POST',
           mode: 'no-cors',
@@ -342,10 +439,10 @@
           body: formData.toString()
         });
 
-        showFeedback('success', 'Registro enviado com sucesso para a planilha!');
+        showFeedback('success', 'Registro enviado com sucesso!');
         localInput.value = '';
       } catch (err) {
-        showFeedback('error', 'Falha de rede ao enviar os dados. Tente novamente.');
+        showFeedback('error', 'Falha de rede ao enviar os dados.');
       } finally {
         btnSubmit.disabled = false;
         btnSubmit.textContent = 'Registrar Localização';
@@ -354,8 +451,10 @@
 
     btnRefresh.addEventListener('click', fetchCoordinates);
 
-    // Inicia a captura assim que a página carrega
-    document.addEventListener('DOMContentLoaded', fetchCoordinates);
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      fetchCoordinates();
+    });
   </script>
 </body>
 </html>
