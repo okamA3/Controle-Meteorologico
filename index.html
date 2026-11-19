@@ -3,132 +3,270 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de Localização</title>
+  <title>GeoCheck — Registro de Localização</title>
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
+      --bg-base: #090d16;
+      --bg-surface: #111827;
+      --bg-elevated: #1f2937;
+      --bg-input: #0b0f19;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
       --accent: #3b82f6;
       --accent-hover: #2563eb;
+      --accent-glow: rgba(59, 130, 246, 0.25);
       --success: #10b981;
-      --error: #ef4444;
       --warning: #f59e0b;
-      --border: #334155;
+      --error: #ef4444;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(59, 130, 246, 0.6);
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     body {
-      background-color: var(--bg-color);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
       color: var(--text-primary);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      padding: 1rem;
+      padding: 1.25rem;
     }
 
-    .container {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.75rem;
+    /* Layout Principal Split-Screen no Desktop */
+    .app-shell {
+      display: grid;
+      grid-template-columns: 420px 1fr;
       width: 100%;
-      max-width: 480px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      max-width: 1060px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+    }
+
+    /* Coluna Esquerda: Controles e Formulário */
+    .sidebar {
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--border);
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--bg-elevated);
+      border-radius: 99px;
     }
 
     header {
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .badge-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      background: rgba(59, 130, 246, 0.12);
+      padding: 0.25rem 0.6rem;
+      border-radius: 99px;
+      margin-bottom: 0.6rem;
     }
 
     h1 {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 700;
+      letter-spacing: -0.02em;
       margin-bottom: 0.25rem;
     }
 
-    p.subtitle {
+    .subtitle {
       color: var(--text-secondary);
-      font-size: 0.875rem;
+      font-size: 0.85rem;
+      line-height: 1.4;
     }
 
     .form-group {
-      margin-bottom: 1rem;
+      margin-bottom: 1.1rem;
       position: relative;
     }
 
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 500;
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 0.4rem;
-      color: var(--text-primary);
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost-mini {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: opacity 0.2s;
+    }
+    .btn-ghost-mini:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 0.85rem;
+      color: var(--text-muted);
+      pointer-events: none;
+      display: flex;
     }
 
     input {
       width: 100%;
       padding: 0.7rem 0.9rem;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       border: 1px solid var(--border);
-      background-color: var(--bg-color);
+      background-color: var(--bg-input);
       color: var(--text-primary);
-      font-size: 0.95rem;
-      transition: border-color 0.2s;
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    input.has-icon {
+      padding-left: 2.4rem;
+    }
+
+    input.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
     }
 
     input:focus {
       outline: none;
-      border-color: var(--accent);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
-    /* Busca de Endereço (Nominatim) */
+    /* Sugestão de Reverse Geocoding */
+    .reverse-suggestion {
+      display: none;
+      margin-top: 0.45rem;
+      padding: 0.5rem 0.7rem;
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px dashed rgba(59, 130, 246, 0.35);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .reverse-suggestion.visible {
+      display: flex;
+    }
+    .reverse-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .btn-apply-suggestion {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.25rem 0.55rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Busca Nominatim */
     .search-box {
       display: flex;
       gap: 0.5rem;
     }
 
-    .btn-search {
-      background-color: var(--border);
+    .btn-icon-action {
+      background-color: var(--bg-elevated);
       border: 1px solid var(--border);
       color: var(--text-primary);
       padding: 0 0.9rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
+      border-radius: var(--radius-md);
+      font-size: 0.82rem;
       font-weight: 500;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
       flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
     }
 
-    .btn-search:hover {
-      background-color: #475569;
+    .btn-icon-action:hover {
+      background-color: #2d3748;
+      border-color: rgba(255,255,255,0.18);
     }
 
     .search-results {
       position: absolute;
-      top: 100%;
+      top: calc(100% + 4px);
       left: 0;
       right: 0;
-      background-color: var(--bg-color);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-top: 0.35rem;
-      max-height: 200px;
+      background-color: var(--bg-elevated);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-md);
+      max-height: 210px;
       overflow-y: auto;
       z-index: 1000;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.75);
       display: none;
     }
 
@@ -138,11 +276,12 @@
 
     .search-item {
       padding: 0.65rem 0.85rem;
-      font-size: 0.825rem;
+      font-size: 0.8rem;
       color: var(--text-primary);
       border-bottom: 1px solid var(--border);
       cursor: pointer;
-      line-height: 1.35;
+      line-height: 1.4;
+      transition: background 0.15s;
     }
 
     .search-item:last-child {
@@ -150,13 +289,12 @@
     }
 
     .search-item:hover {
-      background-color: var(--card-bg);
-      color: var(--accent);
+      background-color: rgba(59, 130, 246, 0.15);
     }
 
     .search-empty {
-      padding: 0.75rem;
-      font-size: 0.825rem;
+      padding: 0.8rem;
+      font-size: 0.8rem;
       color: var(--text-secondary);
       text-align: center;
     }
@@ -167,52 +305,24 @@
       gap: 0.75rem;
     }
 
-    /* Container do Mapa Leaflet */
-    .map-wrapper {
-      margin-bottom: 1rem;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      position: relative;
-    }
-
-    #map {
-      height: 240px;
-      width: 100%;
-      background-color: #1e293b;
-      z-index: 1;
-    }
-
-    .dark-tiles {
-      filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
-    }
-
-    .map-hint {
-      background-color: rgba(15, 23, 42, 0.9);
-      color: var(--text-secondary);
-      font-size: 0.75rem;
-      padding: 0.4rem 0.6rem;
-      text-align: center;
-      border-top: 1px solid var(--border);
-    }
-
-    .gps-status {
+    /* Status GPS Bar */
+    .gps-pill {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.5rem;
-      background-color: rgba(15, 23, 42, 0.5);
+      background-color: var(--bg-input);
       border: 1px solid var(--border);
-      padding: 0.65rem 0.75rem;
-      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      border-radius: var(--radius-md);
       margin-bottom: 1.25rem;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
     }
 
     .status-indicator {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
       overflow: hidden;
     }
 
@@ -220,6 +330,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: var(--text-secondary);
     }
 
     .dot {
@@ -230,162 +341,451 @@
       flex-shrink: 0;
     }
 
-    .dot.active { background-color: var(--success); }
+    .dot.active {
+      background-color: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
     .dot.paused { background-color: var(--accent); }
     .dot.error { background-color: var(--error); }
 
-    .btn-refresh {
-      background: transparent;
+    .btn-gps-toggle {
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text-primary);
       padding: 0.3rem 0.65rem;
       border-radius: 6px;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
       flex-shrink: 0;
     }
 
-    .btn-refresh:hover {
-      background: var(--border);
+    .btn-gps-toggle:hover {
+      background: rgba(255, 255, 255, 0.12);
     }
 
+    /* Botão Principal */
     .btn-submit {
       width: 100%;
-      padding: 0.85rem;
+      padding: 0.85rem 1rem;
       border: none;
-      border-radius: 8px;
-      background-color: var(--accent);
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent), #2563eb);
       color: white;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.2s, opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
     }
 
     .btn-submit:hover:not(:disabled) {
-      background-color: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
     }
 
     .btn-submit:disabled {
-      opacity: 0.5;
+      opacity: 0.55;
       cursor: not-allowed;
     }
 
     .toast {
-      margin-top: 1rem;
-      padding: 0.75rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
+      margin-top: 0.85rem;
+      padding: 0.7rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 500;
       text-align: center;
       display: none;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .toast.success {
       display: block;
-      background-color: rgba(16, 185, 129, 0.15);
-      border: 1px solid var(--success);
-      color: var(--success);
+      background-color: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
     }
 
     .toast.error {
       display: block;
-      background-color: rgba(239, 68, 68, 0.15);
-      border: 1px solid var(--error);
-      color: var(--error);
+      background-color: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    /* Histórico Recente */
+    .history-section {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.65rem;
+    }
+
+    .history-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      max-height: 145px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+    }
+
+    .history-info strong {
+      display: block;
+      color: var(--text-primary);
+      font-weight: 500;
+      margin-bottom: 0.15rem;
+    }
+
+    .history-info span {
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+    }
+
+    .history-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      background: rgba(59, 130, 246, 0.1);
+    }
+    .history-link:hover {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    /* Coluna Direita: Mapa Interativo Full-Height */
+    .map-stage {
+      position: relative;
+      min-height: 540px;
+      background-color: #0b0f19;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #map {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .dark-tiles {
+      filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(92%);
+    }
+
+    /* Controles Flutuantes sobre o Mapa */
+    .map-floating-controls {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 500;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .map-pill-btn {
+      background: rgba(17, 24, 39, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+      padding: 0.5rem 0.8rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s;
+    }
+
+    .map-pill-btn:hover {
+      background: var(--bg-elevated);
+      border-color: var(--accent);
+    }
+
+    .map-pill-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .map-overlay-hint {
+      position: absolute;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 500;
+      background: rgba(17, 24, 39, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 99px;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Estilização dos botões de Zoom do Leaflet */
+    .leaflet-control-zoom {
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-radius: var(--radius-sm) !important;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    }
+    .leaflet-control-zoom a {
+      background-color: rgba(17, 24, 39, 0.92) !important;
+      color: var(--text-primary) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    .leaflet-control-zoom a:hover {
+      background-color: var(--bg-elevated) !important;
+    }
+
+    /* Marcador Customizado com Pulso */
+    .custom-pin {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .pin-pulse {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.35);
+      animation: pulseRing 2s infinite ease-out;
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.4); opacity: 0.9; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    /* Responsividade Mobile / Tablet */
+    @media (max-width: 860px) {
+      body {
+        padding: 0.75rem;
+        align-items: flex-start;
+      }
+      .app-shell {
+        grid-template-columns: 1fr;
+        max-width: 520px;
+      }
+      .sidebar {
+        border-right: none;
+        border-top: 1px solid var(--border);
+        max-height: none;
+        order: 2;
+        padding: 1.35rem;
+      }
+      .map-stage {
+        min-height: 280px;
+        height: 280px;
+        order: 1;
+      }
+      .map-overlay-hint {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.75rem;
+      }
     }
   </style>
 </head>
 <body>
 
-  <main class="container">
-    <header>
-      <h1>Check-in de Localização</h1>
-      <p class="subtitle">Busque um endereço, ajuste no mapa ou use o GPS ao vivo.</p>
-    </header>
+  <div class="app-shell">
+    <!-- Painel Lateral / Formulário -->
+    <aside class="sidebar">
+      <div>
+        <header>
+          <div class="badge-header">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Telemetria & Check-in
+          </div>
+          <h1>Registro de Localização</h1>
+          <p class="subtitle">Capture via GPS, clique no mapa ou busque um endereço para enviar à planilha.</p>
+        </header>
 
-    <form id="geoForm">
-      <div class="form-group">
-        <label for="local">Nome do Local</label>
-        <input 
-          type="text" 
-          id="local" 
-          name="entry.690706598" 
-          placeholder="Ex: Portaria Principal, Setor B..." 
-          required 
-          autocomplete="off"
-        >
+        <form id="geoForm">
+          <!-- Nome do Local -->
+          <div class="form-group">
+            <div class="label-row">
+              <label for="local">Nome do Local</label>
+            </div>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              </span>
+              <input 
+                type="text" 
+                id="local" 
+                class="has-icon"
+                name="entry.690706598" 
+                placeholder="Ex: Portaria Principal, Setor B..." 
+                required 
+                autocomplete="off"
+              >
+            </div>
+            <!-- Sugestão automática ao clicar no mapa -->
+            <div id="reverseSuggestion" class="reverse-suggestion">
+              <span class="reverse-text" id="reverseText">Rua detectada...</span>
+              <button type="button" class="btn-apply-suggestion" id="btnApplySuggestion">Usar nome</button>
+            </div>
+          </div>
+
+          <!-- Busca Nominatim -->
+          <div class="form-group">
+            <div class="label-row">
+              <label for="addressSearch">Buscar Endereço</label>
+            </div>
+            <div class="search-box">
+              <div class="input-wrapper" style="flex: 1;">
+                <span class="input-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input 
+                  type="text" 
+                  id="addressSearch" 
+                  class="has-icon"
+                  placeholder="Rua, bairro ou cidade..." 
+                  autocomplete="off"
+                >
+              </div>
+              <button type="button" class="btn-icon-action" id="btnSearch">Buscar</button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+          </div>
+
+          <!-- Coordenadas -->
+          <div class="form-group">
+            <div class="label-row">
+              <label>Coordenadas Geográficas</label>
+              <button type="button" class="btn-ghost-mini" id="btnCopyCoords" title="Copiar Latitude e Longitude">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span id="copyLabel">Copiar</span>
+              </button>
+            </div>
+            <div class="coords-grid">
+              <input 
+                type="number" 
+                step="any"
+                id="latitude" 
+                class="mono"
+                name="entry.1565294304" 
+                placeholder="Latitude" 
+                required
+              >
+              <input 
+                type="number" 
+                step="any"
+                id="longitude" 
+                class="mono"
+                name="entry.612983124" 
+                placeholder="Longitude" 
+                required
+              >
+            </div>
+          </div>
+
+          <!-- Status do GPS -->
+          <div class="gps-pill">
+            <div class="status-indicator">
+              <span class="dot" id="gpsDot"></span>
+              <span id="gpsText">Iniciando GPS...</span>
+            </div>
+            <button type="button" class="btn-gps-toggle" id="btnRefresh">
+              Seguir GPS
+            </button>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btnSubmit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg>
+            <span>Registrar Localização</span>
+          </button>
+
+          <div id="feedback" class="toast" role="alert"></div>
+        </form>
       </div>
 
-      <!-- Barra de Busca Nominatim -->
-      <div class="form-group">
-        <label for="addressSearch">Buscar Endereço no Mapa</label>
-        <div class="search-box">
-          <input 
-            type="text" 
-            id="addressSearch" 
-            placeholder="Digite rua, bairro ou cidade..." 
-            autocomplete="off"
-          >
-          <button type="button" class="btn-search" id="btnSearch">Buscar</button>
+      <!-- Histórico Local -->
+      <div class="history-section" id="historySection" style="display: none;">
+        <div class="history-header">
+          <span class="history-title">Últimos Envios (Neste Dispositivo)</span>
+          <button type="button" class="btn-ghost-mini" id="btnClearHistory" style="color: var(--text-muted);">Limpar</button>
         </div>
-        <div id="searchResults" class="search-results"></div>
+        <div class="history-list" id="historyList"></div>
       </div>
+    </aside>
 
-      <div class="map-wrapper">
-        <div id="map"></div>
-        <div class="map-hint">Clique no mapa, arraste o pino ou edite os números abaixo</div>
-      </div>
-
-      <div class="coords-grid">
-        <div class="form-group">
-          <label for="latitude">Latitude</label>
-          <input 
-            type="number" 
-            step="any"
-            id="latitude" 
-            name="entry.1565294304" 
-            placeholder="-23.000000" 
-            required
-          >
-        </div>
-
-        <div class="form-group">
-          <label for="longitude">Longitude</label>
-          <input 
-            type="number" 
-            step="any"
-            id="longitude" 
-            name="entry.612983124" 
-            placeholder="-46.000000" 
-            required
-          >
-        </div>
-      </div>
-
-      <div class="gps-status">
-        <div class="status-indicator">
-          <span class="dot" id="gpsDot"></span>
-          <span id="gpsText">Iniciando GPS em tempo real...</span>
-        </div>
-        <button type="button" class="btn-refresh" id="btnRefresh">
-          Seguir GPS
+    <!-- Palco do Mapa -->
+    <section class="map-stage">
+      <div class="map-floating-controls">
+        <button type="button" class="map-pill-btn active" id="btnLayerDark">Mapa</button>
+        <button type="button" class="map-pill-btn" id="btnLayerSat">Satélite</button>
+        <button type="button" class="map-pill-btn" id="btnCenterPin" title="Centralizar no marcador">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
         </button>
       </div>
 
-      <button type="submit" class="btn-submit" id="btnSubmit">
-        Registrar Localização
-      </button>
-
-      <div id="feedback" class="toast" role="alert"></div>
-    </form>
-  </main>
+      <div id="map"></div>
+      
+      <div class="map-overlay-hint">
+        Clique no mapa ou arraste o pino para ajuste fino
+      </div>
+    </section>
+  </div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <script>
     const FORM_ACTION_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf_rnqKDB-wdYD3PIxkgKafM8PtugWNWbRe7ufbUTyORsnhUg/formResponse';
+    const HISTORY_STORAGE_KEY = 'geocheck_recent_entries_v1';
 
     const form = document.getElementById('geoForm');
     const localInput = document.getElementById('local');
@@ -400,12 +800,43 @@
     const btnSubmit = document.getElementById('btnSubmit');
     const feedback = document.getElementById('feedback');
 
+    // Novos elementos de UX
+    const reverseSuggestion = document.getElementById('reverseSuggestion');
+    const reverseText = document.getElementById('reverseText');
+    const btnApplySuggestion = document.getElementById('btnApplySuggestion');
+    const btnCopyCoords = document.getElementById('btnCopyCoords');
+    const copyLabel = document.getElementById('copyLabel');
+    const btnLayerDark = document.getElementById('btnLayerDark');
+    const btnLayerSat = document.getElementById('btnLayerSat');
+    const btnCenterPin = document.getElementById('btnCenterPin');
+    const historySection = document.getElementById('historySection');
+    const historyList = document.getElementById('historyList');
+    const btnClearHistory = document.getElementById('btnClearHistory');
+
     let map = null;
+    let darkTileLayer = null;
+    let satTileLayer = null;
     let marker = null;
     let accuracyCircle = null;
     let watchId = null;
     let isAutoTracking = true;
     let searchDebounceTimer = null;
+    let reverseDebounceTimer = null;
+    let lastSuggestedName = '';
+
+    // Ícone SVG Customizado com Pulso
+    const customPinIcon = L.divIcon({
+      className: 'custom-pin',
+      html: `
+        <div class="pin-pulse"></div>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="#3b82f6" stroke="#ffffff" stroke-width="2" style="position:relative; z-index:2; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6)); transform: translateY(-12px);">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3" fill="#ffffff"></circle>
+        </svg>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
 
     function initMap() {
       map = L.map('map', {
@@ -413,16 +844,49 @@
         attributionControl: false
       }).setView([-14.235, -51.925], 4);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      darkTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         className: 'dark-tiles'
-      }).addTo(map);
+      });
+
+      // Camada de Satélite gratuita (Esri World Imagery)
+      satTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      });
+
+      darkTileLayer.addTo(map);
 
       map.on('click', (e) => {
         pauseAutoTracking('Ponto selecionado no mapa');
         setCoordinates(e.latlng.lat, e.latlng.lng, null, false);
+        triggerReverseGeocode(e.latlng.lat, e.latlng.lng);
       });
     }
+
+    // Alternância de Camadas (Mapa / Satélite)
+    btnLayerDark.addEventListener('click', () => {
+      if (!map.hasLayer(darkTileLayer)) {
+        map.removeLayer(satTileLayer);
+        darkTileLayer.addTo(map);
+        btnLayerDark.classList.add('active');
+        btnLayerSat.classList.remove('active');
+      }
+    });
+
+    btnLayerSat.addEventListener('click', () => {
+      if (!map.hasLayer(satTileLayer)) {
+        map.removeLayer(darkTileLayer);
+        satTileLayer.addTo(map);
+        btnLayerSat.classList.add('active');
+        btnLayerDark.classList.remove('active');
+      }
+    });
+
+    btnCenterPin.addEventListener('click', () => {
+      if (marker) {
+        map.setView(marker.getLatLng(), 17, { animate: true });
+      }
+    });
 
     function setCoordinates(lat, lng, accuracy = null, recenterMap = true, zoomLevel = null) {
       const coords = [lat, lng];
@@ -430,16 +894,17 @@
       lngInput.value = lng.toFixed(6);
 
       if (!marker) {
-        marker = L.marker(coords, { draggable: true }).addTo(map);
+        marker = L.marker(coords, { draggable: true, icon: customPinIcon }).addTo(map);
 
         marker.on('dragstart', () => {
-          pauseAutoTracking('Ajustando manualmente...');
+          pauseAutoTracking('Ajustando pino...');
         });
 
         marker.on('dragend', (event) => {
           const pos = event.target.getLatLng();
           setCoordinates(pos.lat, pos.lng, null, false);
           updateGpsStatus('paused', 'Posição manual (GPS pausado)');
+          triggerReverseGeocode(pos.lat, pos.lng);
         });
       } else {
         marker.setLatLng(coords);
@@ -453,7 +918,7 @@
             radius: accuracy,
             color: '#3b82f6',
             fillColor: '#3b82f6',
-            fillOpacity: 0.15,
+            fillOpacity: 0.12,
             weight: 1
           }).addTo(map);
         }
@@ -468,7 +933,37 @@
       }
     }
 
-    // Busca via Nominatim API (OpenStreetMap)
+    // Reverse Geocoding (Descobre o nome da rua ao clicar no mapa)
+    function triggerReverseGeocode(lat, lng) {
+      clearTimeout(reverseDebounceTimer);
+      reverseDebounceTimer = setTimeout(async () => {
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=pt-BR`;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data && data.address) {
+            const road = data.address.road || data.address.pedestrian || data.address.suburb || data.name;
+            const city = data.address.city || data.address.town || data.address.municipality;
+            if (road) {
+              lastSuggestedName = city ? `${road} - ${city}` : road;
+              reverseText.textContent = `Detectado: ${lastSuggestedName}`;
+              reverseSuggestion.classList.add('visible');
+            }
+          }
+        } catch (e) {
+          // Silencia falhas de rede no reverse geocode
+        }
+      }, 400);
+    }
+
+    btnApplySuggestion.addEventListener('click', () => {
+      if (lastSuggestedName) {
+        localInput.value = lastSuggestedName;
+        reverseSuggestion.classList.remove('visible');
+      }
+    });
+
+    // Busca via Nominatim API
     async function searchAddress(query) {
       const trimmed = query.trim();
       if (trimmed.length < 3) {
@@ -501,8 +996,8 @@
             
             pauseAutoTracking('Endereço selecionado via busca');
             setCoordinates(lat, lng, null, true, 17);
+            reverseSuggestion.classList.remove('visible');
             
-            // Preenche o nome do local se estiver vazio
             if (!localInput.value.trim()) {
               localInput.value = place.display_name.split(',')[0];
             }
@@ -538,11 +1033,21 @@
       searchAddress(searchInput.value);
     });
 
-    // Fecha o dropdown ao clicar fora da busca
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.form-group')) {
         searchResults.classList.remove('open');
       }
+    });
+
+    // Copiar Coordenadas
+    btnCopyCoords.addEventListener('click', async () => {
+      if (!latInput.value || !lngInput.value) return;
+      const text = `${latInput.value}, ${lngInput.value}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyLabel.textContent = 'Copiado!';
+        setTimeout(() => copyLabel.textContent = 'Copiar', 2000);
+      } catch (e) {}
     });
 
     function updateGpsStatus(state, message) {
@@ -562,6 +1067,7 @@
     function startRealTimeTracking() {
       isAutoTracking = true;
       btnRefresh.textContent = 'Seguir GPS';
+      reverseSuggestion.classList.remove('visible');
       updateGpsStatus('loading', 'Rastreando GPS...');
 
       if (!('geolocation' in navigator)) {
@@ -583,7 +1089,7 @@
         },
         (error) => {
           if (!isAutoTracking) return;
-          let msg = 'Erro no GPS. Busque ou edite manual.';
+          let msg = 'Erro no GPS. Busque ou edite.';
           if (error.code === error.PERMISSION_DENIED) msg = 'Permissão negada. Busque ou edite.';
           if (error.code === error.POSITION_UNAVAILABLE) msg = 'Sem sinal GPS. Busque ou edite.';
           updateGpsStatus('error', msg);
@@ -604,7 +1110,7 @@
         pauseAutoTracking('Coordenadas digitadas');
         const coords = [lat, lng];
         if (!marker) {
-          marker = L.marker(coords, { draggable: true }).addTo(map);
+          marker = L.marker(coords, { draggable: true, icon: customPinIcon }).addTo(map);
         } else {
           marker.setLatLng(coords);
         }
@@ -631,11 +1137,59 @@
       }, 5000);
     }
 
+    // Histórico Local (localStorage)
+    function loadHistory() {
+      try {
+        const items = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || '[]');
+        if (items.length === 0) {
+          historySection.style.display = 'none';
+          return;
+        }
+        historySection.style.display = 'block';
+        historyList.innerHTML = '';
+        items.forEach((item) => {
+          const el = document.createElement('div');
+          el.className = 'history-item';
+          el.innerHTML = `
+            <div class="history-info">
+              <strong>${escapeHtml(item.local)}</strong>
+              <span>${item.lat}, ${item.lng} • ${item.time}</span>
+            </div>
+            <a class="history-link" href="https://www.google.com/maps?q=${item.lat},${item.lng}" target="_blank" rel="noopener">Maps ↗</a>
+          `;
+          historyList.appendChild(el);
+        });
+      } catch (e) {}
+    }
+
+    function saveHistory(local, lat, lng) {
+      try {
+        const items = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || '[]');
+        const now = new Date();
+        const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        items.unshift({ local, lat, lng, time });
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items.slice(0, 5)));
+        loadHistory();
+      } catch (e) {}
+    }
+
+    btnClearHistory.addEventListener('click', () => {
+      localStorage.removeItem(HISTORY_STORAGE_KEY);
+      loadHistory();
+    });
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const lat = parseFloat(latInput.value);
       const lng = parseFloat(lngInput.value);
+      const localName = localInput.value.trim();
 
       if (isNaN(lat) || isNaN(lng)) {
         showFeedback('error', 'Informe coordenadas válidas antes de enviar.');
@@ -643,14 +1197,17 @@
       }
 
       btnSubmit.disabled = true;
-      btnSubmit.textContent = 'Enviando...';
+      btnSubmit.querySelector('span').textContent = 'Enviando...';
 
-      // O apóstrofo força o Google Sheets a salvar como texto literal com ponto (alinhado à esquerda, igual às primeiras linhas)
-      const latFormatted = "'" + lat.toFixed(6);
-      const lngFormatted = "'" + lng.toFixed(6);
+      const rawLat = lat.toFixed(6);
+      const rawLng = lng.toFixed(6);
+
+      // Prefixo com apóstrofo mantém ponto e alinhamento à esquerda no Google Sheets PT-BR
+      const latFormatted = "'" + rawLat;
+      const lngFormatted = "'" + rawLng;
 
       const formData = new URLSearchParams();
-      formData.append('entry.690706598', localInput.value.trim());
+      formData.append('entry.690706598', localName);
       formData.append('entry.1565294304', latFormatted);
       formData.append('entry.612983124', lngFormatted);
 
@@ -664,20 +1221,23 @@
           body: formData.toString()
         });
 
-        showFeedback('success', 'Localização registrada com sucesso!');
+        saveHistory(localName, rawLat, rawLng);
+        showFeedback('success', 'Localização registrada na planilha!');
         localInput.value = '';
         searchInput.value = '';
+        reverseSuggestion.classList.remove('visible');
       } catch (err) {
         showFeedback('error', 'Falha de rede ao enviar os dados.');
       } finally {
         btnSubmit.disabled = false;
-        btnSubmit.textContent = 'Registrar Localização';
+        btnSubmit.querySelector('span').textContent = 'Registrar Localização';
       }
     });
 
     document.addEventListener('DOMContentLoaded', () => {
       initMap();
       startRealTimeTracking();
+      loadHistory();
     });
   </script>
 </body>
